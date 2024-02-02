@@ -2,8 +2,9 @@ const Token = artifacts.require("Token");
 const Timelock = artifacts.require("Timelock");
 const Governance = artifacts.require("Governance");
 const Treasury = artifacts.require("Treasury");
+const { advanceTime } = require("./timeUtils.js");
 
-module.exports = async function (callback) {
+module.exports = async function () {
   const [executor, proposer, voter1, voter2, voter3, voter4, voter5] =
     await web3.eth.getAccounts();
 
@@ -86,7 +87,7 @@ module.exports = async function (callback) {
     `Current state of proposal: ${proposalState.toString()} (Active) \n`
   );
 
-  // NOTE: Transfer serves no purposes, it's just used to fast foward one block after the voting period ends
+  // NOTE: Transfer serves no purposes, it's just used to fast forward one block after the voting period ends
   await token.transfer(proposer, amount, { from: executor });
 
   const { againstVotes, forVotes, abstainVotes } =
@@ -118,6 +119,9 @@ module.exports = async function (callback) {
     `Current state of proposal: ${proposalState.toString()} (Queued) \n`
   );
 
+  // Advance time by 3 days (259200 seconds)
+  await advanceTime(259200);
+
   // Execute
   await governance.execute([treasury.address], [0], [encodedFunction], hash, {
     from: executor,
@@ -138,6 +142,4 @@ module.exports = async function (callback) {
       "ether"
     )} ETH\n`
   );
-
-  callback();
 };
