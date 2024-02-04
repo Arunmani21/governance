@@ -1,11 +1,12 @@
+require("dotenv").config();
+
 const Token = artifacts.require("Token");
 const Timelock = artifacts.require("Timelock");
 const Governance = artifacts.require("Governance");
 const Treasury = artifacts.require("Treasury");
 
 module.exports = async function (deployer) {
-  const [executor, proposer, voter1, voter2, voter3, voter4, voter5] =
-    await web3.eth.getAccounts();
+  const [executor, proposer] = await web3.eth.getAccounts();
 
   const name = "GToken";
   const symbol = "GT";
@@ -16,11 +17,9 @@ module.exports = async function (deployer) {
   const token = await Token.deployed();
 
   const amount = web3.utils.toWei("50", "ether");
-  await token.transfer(voter1, amount, { from: executor });
-  await token.transfer(voter2, amount, { from: executor });
-  await token.transfer(voter3, amount, { from: executor });
-  await token.transfer(voter4, amount, { from: executor });
-  await token.transfer(voter5, amount, { from: executor });
+  await token.transfer(process.env.ACCOUNT_2, amount, { from: executor });
+  await token.transfer(process.env.ACCOUNT_3, amount, { from: executor });
+  await token.transfer(process.env.ACCOUNT_4, amount, { from: executor });
 
   // Deploy timelock
   const minDelay = 3600; // How long do we have to wait until we can execute after a passed proposal
@@ -29,7 +28,12 @@ module.exports = async function (deployer) {
   // The 1st array contains addresses of those who are allowed to make a proposal.
   // The 2nd array contains addresses of those who are allowed to make executions.
 
-  await deployer.deploy(Timelock, minDelay, [proposer], [executor]);
+  await deployer.deploy(
+    Timelock,
+    minDelay,
+    [process.env.ACCOUNT_2],
+    [process.env.ACCOUNT_2]
+  );
   const timelock = await Timelock.deployed();
 
   // Deploy governanace
@@ -53,9 +57,9 @@ module.exports = async function (deployer) {
   // In the provided example, once the proposal is successful and executed,
   // timelock contract will be responsible for calling the function.
 
-  const funds = web3.utils.toWei("5", "ether");
+  const funds = web3.utils.toWei("0.1", "ether");
 
-  await deployer.deploy(Treasury, executor, { value: funds });
+  await deployer.deploy(Treasury, process.env.ACCOUNT_2, { value: funds });
   const treasury = await Treasury.deployed();
 
   await treasury.transferOwnership(timelock.address, { from: executor });
